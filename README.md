@@ -28,7 +28,9 @@ docker exec -it コンテナ名 /bin/bash
 
 docker環境内で以下のコマンドを実行するとサーバーが起動します。
 ```bash
-
+cd /root/opt/streamlit
+pipenv shell
+uvicorn run:app
 ```
 
 # Author
