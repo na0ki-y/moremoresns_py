@@ -26,7 +26,7 @@ line_api = AioLineBotApi(channel_access_token=secrets["Line"]["Channel_access_to
 parser = WebhookParser(channel_secret=secrets["Line"]["Channel_secret"])
 
 
-user={"XXXX":-1}#UserID:quessionID
+user_q_id={"XXXX":-1}#UserID:quessionID #誰にどの質問をしているか
 questions={
         1:{"Q":"今日は何食べたの？","A":"{}をたべた"},
         2:{"Q":"いまどこにいるの？","A":"{}にいる"},
@@ -39,6 +39,8 @@ async def handle_broadcast(num):
     try:
         if not num in questions.keys():
             num=random.choice(list(questions.keys()))
+        for u in user_q_id.keys():
+            user_q_id[u]=num
         line_api.broadcast(TextSendMessage(text=questions[num]["Q"]))
     except Exception as e:
             print(e)
@@ -47,9 +49,20 @@ async def send_question(num,ev):
     try:
         if not num in questions.keys():
             num=random.choice(list(questions.keys()))
+        user_q_id[ev.source.user_id]=num
+        print(user_q_id)
         await line_api.reply_message_async(
                         ev.reply_token,
                         TextMessage(text=questions[num]["Q"]))
+    except Exception as e:
+            print(e)
+# イベント処理
+async def send_sns_url(ev,wakati_ans):
+    try:
+        return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
+        await line_api.reply_message_async(
+            ev.reply_token,
+            TextMessage(text=f"{return_text}"))
     except Exception as e:
             print(e)
 # イベント処理
@@ -64,8 +77,8 @@ async def handle_events(events,background_tasks):
                 await line_api.reply_message_async(
                     ev.reply_token,
                     TextMessage(text=f"{return_text}"))
+                #background_tasks.add_task(send_sns_url,ev=ev,wakati_ans=wakati_ans)
             else:
-                return_text="https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
                 await line_api.reply_message_async(
                     ev.reply_token,
                     TextMessage(text=f"それはなに？かんたんに答えて！"))
@@ -79,7 +92,6 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     # 🌟イベント処理をバックグラウンドタスクに渡す
-    print(events)
     background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
     # LINEサーバへHTTP応答を返す
     return "ok"
