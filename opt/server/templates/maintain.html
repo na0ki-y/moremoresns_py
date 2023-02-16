@@ -1,0 +1,21 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 
+  Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <div>Product ID is {{ id }}</div>
+    <script language="javascript" type="text/javascript">
+        function OnButtonClick() {
+            target = document.getElementById("output");
+            target.innerHTML = "Penguin";
+        }
+    </script>
+    <a href="/delete/{{ id }}" class="btn btn-danger btn-sm">削除</a>
+</head>
+<body>
+    <input type="button" value="Exec" onclick="OnButtonClick();"/><br />
+    <br />
+    <div id="output"></div>
+</body>
+</html>
