@@ -41,7 +41,7 @@ async def handle_broadcast(num):
             num=random.choice(list(questions.keys()))
         for u in user_q_id.keys():
             user_q_id[u]=num
-        line_api.broadcast(TextSendMessage(text=questions[num]["Q"]))
+        line_api.broadcast(TextSendMessage(text="いきなり質問！\n"+questions[num]["Q"]))
     except Exception as e:
             print(e)
 # イベント処理
@@ -59,7 +59,7 @@ async def send_question(num,ev):
 # イベント処理
 async def send_sns_url(ev,wakati_ans):
     try:
-        return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
+        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
         await line_api.reply_message_async(
             ev.reply_token,
             TextMessage(text=f"{return_text}"))
@@ -73,11 +73,11 @@ async def handle_events(events,background_tasks):
             if wakati_ans["flag_toukou"]:
                 background_tasks.add_task(send_question,num=-1,ev=ev)
             elif len(wakati_ans["noun_count"])==1:
-                return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
-                await line_api.reply_message_async(
-                    ev.reply_token,
-                    TextMessage(text=f"{return_text}"))
-                #background_tasks.add_task(send_sns_url,ev=ev,wakati_ans=wakati_ans)
+                # return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
+                # await line_api.reply_message_async(
+                #     ev.reply_token,
+                #     TextMessage(text=f"{return_text}"))
+                background_tasks.add_task(send_sns_url,ev=ev,wakati_ans=wakati_ans)
             else:
                 await line_api.reply_message_async(
                     ev.reply_token,
