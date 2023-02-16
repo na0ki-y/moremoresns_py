@@ -4,7 +4,7 @@ from linebot.models import TextMessage
 from aiolinebot import AioLineBotApi
 import json
 
-secrets = json.load(open('secrets_json.json', 'r'))
+secrets = json.load(open('./secrets/secrets.json', 'r'))
 # APIクライアントとパーサーをインスタンス化
 line_api = AioLineBotApi(channel_access_token=secrets["Line"]["Channel_id"])
 parser = WebhookParser(channel_secret=secrets["Line"]["Channel_secret"])
