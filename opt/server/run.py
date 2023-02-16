@@ -3,26 +3,34 @@ from linebot import WebhookParser
 from linebot.models import TextMessage
 from aiolinebot import AioLineBotApi
 import json
-
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage,
+)#https://github.com/line/line-bot-sdk-python
 secrets = json.load(open('./secrets/secrets.json', 'r'))
 # APIクライアントとパーサーをインスタンス化
-line_api = AioLineBotApi(channel_access_token=secrets["Line"]["Channel_id"])
-parser = WebhookParser(channel_secret=secrets["Line"]["Channel_secret"])
+
+#[トップ>XXX>YYY >Messaging API設定>チャンネルアクセストークン(一番下)]で取得
+line_api = AioLineBotApi(channel_access_token=secrets["Line"]["Channel_access_token"])
+
 #まずwebhokのurlを登録　[トップ>XXX>YYY >Messaging API設定]
 #[トップ>XXX>YYY >Messaging API設定>応答メッセージの編集>Messaging API]で取得
+parser = WebhookParser(channel_secret=secrets["Line"]["Channel_secret"])
+
 # FastAPIの起動
 app = FastAPI()
 
 # 🌟イベント処理（新規追加）
 async def handle_events(events):
+    line_api.broadcast(TextSendMessage(text='ブロードキャストですHello World!'))
     for ev in events:
         try:
             await line_api.reply_message_async(
                 ev.reply_token,
                 TextMessage(text=f"You said: {ev.message.text}"))
-        except Exception:
+
+        except Exception as e:
             # エラーログ書いたりする
-            pass
+            print(e)
 
 @app.post("/messaging_api/handle_request")
 async def handle_request(request: Request, background_tasks: BackgroundTasks):  # 🌟background_tasksを追加
