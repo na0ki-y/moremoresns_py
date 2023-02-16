@@ -6,6 +6,7 @@ import json
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
 )#https://github.com/line/line-bot-sdk-python
+from lang import wakatigai_return_meisi
 secrets = json.load(open('./secrets/secrets.json', 'r'))
 # APIクライアントとパーサーをインスタンス化
 
@@ -21,12 +22,20 @@ app = FastAPI()
 
 # 🌟イベント処理（新規追加）
 async def handle_events(events):
-    line_api.broadcast(TextSendMessage(text='ブロードキャストですHello World!'))
+    #line_api.broadcast(TextSendMessage(text='ブロードキャストですHello World!'))
     for ev in events:
         try:
-            await line_api.reply_message_async(
-                ev.reply_token,
-                TextMessage(text=f"You said: {ev.message.text}"))
+            meisi=wakatigai_return_meisi(ev.message.text)
+            if len(meisi)==1:
+                return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+meisi[0][0]+"を食べたよ"
+                await line_api.reply_message_async(
+                    ev.reply_token,
+                    TextMessage(text=f"{return_text}"))
+            else:
+                return_text="https://twitter.com/intent/tweet?text="+meisi[0][0]+"を食べたよ"
+                await line_api.reply_message_async(
+                    ev.reply_token,
+                    TextMessage(text=f"それはなに？かんたんに答えて！"))
 
         except Exception as e:
             # エラーログ書いたりする
