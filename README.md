@@ -26,9 +26,27 @@ docker compose exec サービス名 bash
 docker exec -it コンテナ名 /bin/bash
 ```
 
+シークレットファイルがあります。
+```bash
+cd /opt/server/
+mkdir secrets
+cd secrets
+touch secrets.json
+```
+中身の形式は以下です。
+```secrets.json
+{
+    "Line":{
+        "Channel_id":"1111",
+        "Channel_access_token":"xxxxx",
+        "Channel_secret": "xxxxxx"
+    }
+}
+```
+
 docker環境内で以下のコマンドを実行するとサーバーが起動します。
 ```bash
-cd /root/opt/streamlit
+cd /root/opt/server
 pipenv shell
 uvicorn run:app
 ```
