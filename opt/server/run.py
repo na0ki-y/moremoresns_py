@@ -14,7 +14,7 @@ from aiolinebot import AioLineBotApi
 import json
 import random
 
-# from GPT3 import gpt3
+from GPT3 import gpt3
 
 from lang import wakatigai
 secrets = json.load(open('./secrets/secrets.json', 'r'))
@@ -61,6 +61,8 @@ async def send_question(num,ev):
 # イベント処理
 async def send_sns_url(ev,tweet_text):
     try:
+        print(type(tweet_text))
+        print(tweet_text)
         return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+tweet_text
         await line_api.reply_message_async(
             ev.reply_token,
@@ -83,10 +85,13 @@ async def handle_events(events,background_tasks):
                 tweet_text = questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
                 background_tasks.add_task(send_sns_url,ev=ev,tweet_text=tweet_text)
             else:
-                # background_tasks.add_task(GPT,ev=ev,wakati_ans=wakati_ans)
-                await line_api.reply_message_async(
-                    ev.reply_token,
-                    TextMessage(text=f"それはなに？かんたんに答えて！"))
+                res = gpt3(ev.message.text)
+                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0])
+                
+                # await line_api.reply_message_async(
+                #     ev.reply_token,
+                #     TextMessage(text=f"それはなに？かんたんに答えて！"))
+
         except Exception as e:
             print(e)
 
