@@ -14,6 +14,8 @@ from aiolinebot import AioLineBotApi
 import json
 import random
 
+# from GPT3 import gpt3
+
 from lang import wakatigai
 secrets = json.load(open('./secrets/secrets.json', 'r'))
 # APIクライアントとパーサーをインスタンス化
@@ -57,14 +59,15 @@ async def send_question(num,ev):
     except Exception as e:
             print(e)
 # イベント処理
-async def send_sns_url(ev,wakati_ans):
+async def send_sns_url(ev,tweet_text):
     try:
-        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
+        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+tweet_text
         await line_api.reply_message_async(
             ev.reply_token,
             TextMessage(text=f"{return_text}"))
     except Exception as e:
             print(e)
+
 # イベント処理
 async def handle_events(events,background_tasks):
     for ev in events:
@@ -77,8 +80,10 @@ async def handle_events(events,background_tasks):
                 # await line_api.reply_message_async(
                 #     ev.reply_token,
                 #     TextMessage(text=f"{return_text}"))
-                background_tasks.add_task(send_sns_url,ev=ev,wakati_ans=wakati_ans)
+                tweet_text = questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
+                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=tweet_text)
             else:
+                # background_tasks.add_task(GPT,ev=ev,wakati_ans=wakati_ans)
                 await line_api.reply_message_async(
                     ev.reply_token,
                     TextMessage(text=f"それはなに？かんたんに答えて！"))
@@ -91,6 +96,7 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
     events = parser.parse(
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
+    print(events)
     # 🌟イベント処理をバックグラウンドタスクに渡す
     background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
     # LINEサーバへHTTP応答を返す
