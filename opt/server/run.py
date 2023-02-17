@@ -12,8 +12,9 @@ from linebot.models import (
 from aiolinebot import AioLineBotApi
 ##
 import json
+import random
 
-from lang import wakatigai_return_meisi
+from lang import wakatigai
 secrets = json.load(open('./secrets/secrets.json', 'r'))
 # APIクライアントとパーサーをインスタンス化
 
@@ -24,27 +25,60 @@ line_api = AioLineBotApi(channel_access_token=secrets["Line"]["Channel_access_to
 #[トップ>XXX>YYY >Messaging API設定>応答メッセージの編集>Messaging API]で取得
 parser = WebhookParser(channel_secret=secrets["Line"]["Channel_secret"])
 
+
+user_q_id={"XXXX":-1}#UserID:quessionID #誰にどの質問をしているか
+questions={
+        1:{"Q":"今日は何食べたの？","A":"{}をたべた"},
+        2:{"Q":"いまどこにいるの？","A":"{}にいる"},
+        3:{"Q":"なにしてるの？","A":"{}をしてるなう"}   
+        }
 # FastAPIの起動
 app = FastAPI()
 # イベント処理
 async def handle_broadcast(num):
     try:
-        line_api.broadcast(TextSendMessage(text='今日は何食べたの？'))
+        if not num in questions.keys():
+            num=random.choice(list(questions.keys()))
+        for u in user_q_id.keys():
+            user_q_id[u]=num
+        line_api.broadcast(TextSendMessage(text="いきなり質問！\n"+questions[num]["Q"]))
     except Exception as e:
             print(e)
-
 # イベント処理
-async def handle_events(events):
+async def send_question(num,ev):
+    try:
+        if not num in questions.keys():
+            num=random.choice(list(questions.keys()))
+        user_q_id[ev.source.user_id]=num
+        print(user_q_id)
+        await line_api.reply_message_async(
+                        ev.reply_token,
+                        TextMessage(text=questions[num]["Q"]))
+    except Exception as e:
+            print(e)
+# イベント処理
+async def send_sns_url(ev,wakati_ans):
+    try:
+        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
+        await line_api.reply_message_async(
+            ev.reply_token,
+            TextMessage(text=f"{return_text}"))
+    except Exception as e:
+            print(e)
+# イベント処理
+async def handle_events(events,background_tasks):
     for ev in events:
         try:
-            meisi=wakatigai_return_meisi(ev.message.text)
-            if len(meisi)==1:
-                return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+meisi[0][0]+"を食べたよ"
-                await line_api.reply_message_async(
-                    ev.reply_token,
-                    TextMessage(text=f"{return_text}"))
+            wakati_ans=wakatigai(ev.message.text)
+            if wakati_ans["flag_toukou"]:
+                background_tasks.add_task(send_question,num=-1,ev=ev)
+            elif len(wakati_ans["noun_count"])==1:
+                # return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
+                # await line_api.reply_message_async(
+                #     ev.reply_token,
+                #     TextMessage(text=f"{return_text}"))
+                background_tasks.add_task(send_sns_url,ev=ev,wakati_ans=wakati_ans)
             else:
-                return_text="https://twitter.com/intent/tweet?text="+meisi[0][0]+"を食べたよ"
                 await line_api.reply_message_async(
                     ev.reply_token,
                     TextMessage(text=f"それはなに？かんたんに答えて！"))
@@ -58,8 +92,7 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     # 🌟イベント処理をバックグラウンドタスクに渡す
-    print(events)
-    background_tasks.add_task(handle_events, events=events)
+    background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
     # LINEサーバへHTTP応答を返す
     return "ok"
 
