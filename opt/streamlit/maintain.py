@@ -2,8 +2,7 @@ import streamlit as st
 import requests
 
 
-URL_server="https://7f8f-133-51-253-29.jp.ngrok.io"
-URL_server="http://127.0.0.1:8000"
+URL_server="http://127.0.0.1:8000"#localのfastapiサーバ
 def main():
     if 'snstext' not in st.session_state: 
 	    st.session_state.snstext = "None"
