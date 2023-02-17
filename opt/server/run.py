@@ -15,6 +15,7 @@ import json
 import random
 
 from GPT3 import gpt3
+import urllib.parse
 
 from lang import wakatigai
 secrets = json.load(open('./secrets/secrets.json', 'r'))
@@ -63,7 +64,7 @@ async def send_sns_url(ev,tweet_text):
     try:
         print(type(tweet_text))
         print(tweet_text)
-        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+tweet_text
+        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+urllib.parse.quote(tweet_text)
         await line_api.reply_message_async(
             ev.reply_token,
             TextMessage(text=f"{return_text}"))

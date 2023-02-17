@@ -26,4 +26,5 @@ def gpt3(input_str):
     finish_time = time.time() - start
     # 以上、課金要素
 
-    return [res.choices[0].text, finish_time] # [GPTの答え, 実行時間]
+    
+    return [res.choices[0].text.strip(), finish_time] # [GPTの答え, 実行時間]
