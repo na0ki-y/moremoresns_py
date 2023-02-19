@@ -21,7 +21,8 @@ def gpt3(input_str):
         prompt=prompt,
         # max_tokens=256,
         max_tokens=128,
-        temperature=0.2 #0.0~2.0
+        temperature=1.0, #0.0~2.0
+        timeout=10
     )
     finish_time = time.time() - start
     # 以上、課金要素

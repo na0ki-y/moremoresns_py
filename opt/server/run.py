@@ -86,6 +86,7 @@ async def handle_events(events,background_tasks):
                 tweet_text = questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
                 background_tasks.add_task(send_sns_url,ev=ev,tweet_text=tweet_text)
             else:
+                # background_tasks.add_task(gpt3,num=-1)
                 res = gpt3(ev.message.text)
                 background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0])
                 
