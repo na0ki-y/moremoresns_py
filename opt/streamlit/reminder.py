@@ -1,5 +1,7 @@
 import json
 import os
+import schedule
+from time import sleep
 path_setting='./reminder_setting.json'
 def make_setting_file():
     '''
@@ -18,14 +20,25 @@ def load_setting():
     setting_json = json.load(open(path_setting, 'r'))
     return setting_json
 
-def loop(setting_json):
+def task():
+    print("タスク")
+
+def setting(setting_json):
     '''
-    スケジューラの無限ループ
+    スケジューラへ登録
     '''
-    pass
+    schedule.every(10).seconds.do(task)
+def loop():
+    '''
+    スケジューラーの無限ループ
+    '''
+    while True:
+        schedule.run_pending()
+        sleep(1)
 def main():
     setting_json=load_setting()
-    loop(setting_json)
+    setting(setting_json)
+
 
 if __name__=="__main__":
     main()
