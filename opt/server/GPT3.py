@@ -12,7 +12,7 @@ f.close()
 openai.api_key = OPENAI_KEY
 
 def gpt3(input_str):
-    prompt = "「{}」をツイート文っぽく変換してください".format(input_str)
+    prompt = "「{}」をツイート文っぽく変換して。".format(input_str)
 
     try:
         # 以下、課金要素
@@ -31,5 +31,15 @@ def gpt3(input_str):
         print(e)
         return None
 
+    res_text = res.choices[0].text
+
+    # 前後の余計な空文字の削除
+    res_text = res_text.strip()
+
+    # 文がかぎ括弧で囲まれる問題の修正
+    delete_target_list = [("「","」"),("\"","\"")]
+    for tup in delete_target_list:
+        if res_text[0] == tup[0] and res_text[-1] == tup[1]:
+            res_text = res_text[1:-1]
     
-    return [res.choices[0].text.strip(), finish_time] # [GPTの答え, 実行時間]
+    return [res_text, finish_time] # [GPTの答え, 実行時間]
