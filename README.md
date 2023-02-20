@@ -32,8 +32,10 @@ cd /opt/server/
 mkdir secrets
 cd secrets
 touch secrets.json
+touch OPENAI_KEY
 ```
-中身の形式は以下です。
+中身の形式は以下です。\
+- secrets.json
 ```secrets.json
 {
     "Line":{
@@ -43,12 +45,16 @@ touch secrets.json
     }
 }
 ```
+- OPENAI_KEY
+```OPENAI_KEY
+XXXXXX
+```
 
 docker環境内で以下のコマンドを実行するとサーバーが起動します。
 ```bash
 cd /root/opt/server
 pipenv shell
-uvicorn run:app
+uvicorn run:app --reload
 ```
 
 # Author
