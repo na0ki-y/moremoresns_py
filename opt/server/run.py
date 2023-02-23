@@ -22,6 +22,8 @@ from lang import wakatigai
 from img2text import init_img2text
 from img2text import predict_step
 secrets = json.load(open('./secrets/secrets.json', 'r'))
+obj_img2text=None
+obj_img2text=init_img2text()
 # APIクライアントとパーサーをインスタンス化
 
 #[トップ>XXX>YYY >Messaging API設定>チャンネルアクセストークン(一番下)]で取得
@@ -142,6 +144,7 @@ img_cnt=0
 async def handle_events_img(events,background_tasks):
     '''
     LINEのメッセージ(画像)を処理する
+    画像を取得し、文字(英語)を取得、そしてツイート(日本語)にし、返信する
     '''
     global img_cnt
     for ev in events:
@@ -152,12 +155,23 @@ async def handle_events_img(events,background_tasks):
             with open(img_path, 'wb') as fd:
                 for chunk in message_content.iter_content():
                     fd.write(chunk)
-            #####ツイート文を生成
-            pass
+            #####画像から文字(英語)を取得 
+            preds=predict_step([img_path],obj_img2text)
+            ######文字(英語)からツイート(日本語)生成
+            res = gpt3(preds[0],req_jp=True)
+            # gptの生成に時間がかかった場合
+            if res == None:
+                await line_api.reply_message_async(
+                ev.reply_token,
+                TextMessage(text=f"なんの画像かわからないな。"))
+            else:
+                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0],return_text="いい写真だね！ツイートしようよ!")
             #####メッセージを返す
-            background_tasks.add_task(send_sns_url,ev=ev,tweet_text="いい写真を撮ったよ",return_text="いい写真だね！ツイートしようよ!")
+            background_tasks.add_task(send_sns_url,ev=ev,tweet_text=preds[0],return_text="いい写真だね！ツイートしようよ!")
+            print("画像から文字",preds[0])
+            print("文字からツイート",res[0])
             #####画像の取得
-            #os.remove(img_path)
+            os.remove(img_path)
             img_cnt+=1
         except Exception as e:
             print(e)
@@ -173,6 +187,7 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     print(events)
+    print(obj_img2text)
     # イベント処理をバックグラウンドタスクに渡す
     if events[0].message.type=="text":
         background_tasks.add_task(handle_events_text, events=events,background_tasks=background_tasks)

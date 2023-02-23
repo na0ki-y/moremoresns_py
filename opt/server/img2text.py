@@ -12,6 +12,7 @@ def init_img2text():
     obj_img2text["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     obj_img2text["model"].to(obj_img2text["device"])
     obj_img2text["gen_kwargs"] = {"max_length": 16, "num_beams": 4}
+    print("end init img2text")
     return obj_img2text
 def predict_step(image_paths,obj_img2text):
   images = []
