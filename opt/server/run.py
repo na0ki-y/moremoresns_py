@@ -74,6 +74,10 @@ async def send_sns_url(ev,tweet_text):
 
 # イベント処理
 async def handle_events(events,background_tasks):
+    '''
+    LINEのメッセージを処理する
+    形態素解析してそれぞれのバックグラウンド処理へ
+    '''
     for ev in events:
         try:
             wakati_ans=wakatigai(ev.message.text)
@@ -105,13 +109,22 @@ async def handle_events(events,background_tasks):
 
 @app.post("/messaging_api/handle_request")
 async def handle_request(request: Request, background_tasks: BackgroundTasks):
+    '''
+    LINEのメッセージを受け取る
+    内容を確認してバックグラウンドタスクへ
+    '''
     # リクエストをパースしてイベントを取得（署名の検証あり）
     events = parser.parse(
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     print(events)
-    # 🌟イベント処理をバックグラウンドタスクに渡す
-    background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
+    # イベント処理をバックグラウンドタスクに渡す
+    if events[0].message.type=="text":
+        background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
+    elif events[0].message.type=="image":
+        print("img")
+    else:
+        print(events[0].message.type,"no support")
     # LINEサーバへHTTP応答を返す
     return "ok"
 
