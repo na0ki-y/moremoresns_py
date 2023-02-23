@@ -13,6 +13,7 @@ from aiolinebot import AioLineBotApi
 ##
 import json
 import random
+import os 
 
 from GPT3 import gpt3
 import urllib.parse
@@ -61,11 +62,11 @@ async def send_question(num,ev):
     except Exception as e:
             print(e)
 # イベント処理
-async def send_sns_url(ev,tweet_text):
+async def send_sns_url(ev,tweet_text,return_text="そうなんだ！ツイートしようよ！"):
     try:
         print(type(tweet_text))
         print(tweet_text)
-        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+urllib.parse.quote(tweet_text)
+        return_text=return_text+"\nhttps://twitter.com/intent/tweet?text="+urllib.parse.quote(tweet_text)
         await line_api.reply_message_async(
             ev.reply_token,
             TextMessage(text=f"{return_text}"))
@@ -73,9 +74,9 @@ async def send_sns_url(ev,tweet_text):
             print(e)
 
 # イベント処理
-async def handle_events(events,background_tasks):
+async def handle_events_text(events,background_tasks):
     '''
-    LINEのメッセージを処理する
+    LINEのメッセージ(テキスト)を処理する
     形態素解析してそれぞれのバックグラウンド処理へ
     '''
     for ev in events:
@@ -106,6 +107,30 @@ async def handle_events(events,background_tasks):
 
         except Exception as e:
             print(e)
+# イベント処理
+img_cnt=0
+async def handle_events_img(events,background_tasks):
+    '''
+    LINEのメッセージ(画像)を処理する
+    '''
+    global img_cnt
+    for ev in events:
+        try:
+            img_path="./tmp/img{}.png".format(img_cnt)
+            #####画像の取得
+            message_content = line_api.get_message_content(ev.message.id)
+            with open(img_path, 'wb') as fd:
+                for chunk in message_content.iter_content():
+                    fd.write(chunk)
+            #####ツイート文を生成
+            pass
+            #####メッセージを返す
+            background_tasks.add_task(send_sns_url,ev=ev,tweet_text="いい写真を撮ったよ",return_text="いい写真だね！ツイートしようよ!")
+            #####画像の取得
+            #os.remove(img_path)
+            img_cnt+=1
+        except Exception as e:
+            print(e)
 
 @app.post("/messaging_api/handle_request")
 async def handle_request(request: Request, background_tasks: BackgroundTasks):
@@ -120,8 +145,9 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
     print(events)
     # イベント処理をバックグラウンドタスクに渡す
     if events[0].message.type=="text":
-        background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
+        background_tasks.add_task(handle_events_text, events=events,background_tasks=background_tasks)
     elif events[0].message.type=="image":
+        background_tasks.add_task(handle_events_img, events=events,background_tasks=background_tasks)
         print("img")
     else:
         print(events[0].message.type,"no support")
