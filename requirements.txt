@@ -1,0 +1,10 @@
+fastapi 
+uvicorn
+aiolinebot
+mecab-python3
+unidic-lite
+jinja2
+openai
+transformers
+torch
+pillow

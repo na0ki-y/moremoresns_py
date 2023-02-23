@@ -1,0 +1,13 @@
+version: '3'
+services:
+  python3:
+    restart: always
+    build: 
+      context: .
+      dockerfile: ./docker/production/Dockerfile
+    image: 2023_0223_moremoresns
+    container_name: 'moremoresns_py'
+    tty: true
+    working_dir : /root/opt/server
+    volumes:
+      - ./:/root/opt/server/
