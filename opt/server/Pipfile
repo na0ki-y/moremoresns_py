@@ -11,6 +11,9 @@ mecab-python3 = "*"
 unidic-lite = "*"
 jinja2 = "*"
 openai = "*"
+transformers = "*"
+torch = "*"
+pillow = "*"
 
 [dev-packages]
 
