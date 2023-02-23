@@ -19,6 +19,8 @@ from GPT3 import gpt3
 import urllib.parse
 
 from lang import wakatigai
+from img2text import init_img2text
+from img2text import predict_step
 secrets = json.load(open('./secrets/secrets.json', 'r'))
 # APIクライアントとパーサーをインスタンス化
 
