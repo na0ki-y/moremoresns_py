@@ -1,5 +1,6 @@
 import MeCab
 def wakatigai(text):
+    print(text)
     mecabTagger = MeCab.Tagger()
     flag_toukou=False
     noun_count = {}
