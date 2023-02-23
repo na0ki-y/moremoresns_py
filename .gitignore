@@ -1,2 +1,5 @@
 secrets
+credidental
 reminder_setting.json
+start_uvicorn.sh
+start_ngrok.sh

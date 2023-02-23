@@ -3,6 +3,7 @@ services:
   python3:
     restart: always
     build: .
+    image: 2023_0223_moremoresns
     container_name: 'moremoresns_py'
     working_dir: '/root/'
     tty: true
