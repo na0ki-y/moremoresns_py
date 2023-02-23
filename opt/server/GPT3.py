@@ -5,7 +5,7 @@ import os
 # import pickle
 import time
 
-f = open(os.path.join("secrets","OPENAI_KEY"), "r")
+f = open("./credidental/OPENAI_KEY", "r")
 OPENAI_KEY = f.read()
 f.close()
 

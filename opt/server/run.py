@@ -21,7 +21,7 @@ import urllib.parse
 from lang import wakatigai
 from img2text import init_img2text
 from img2text import predict_step
-secrets = json.load(open('./secrets/secrets.json', 'r'))
+secrets = json.load(open("./credidental/secrets.json", "r"))
 obj_img2text=None
 obj_img2text=init_img2text()
 # APIクライアントとパーサーをインスタンス化
