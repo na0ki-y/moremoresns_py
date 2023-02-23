@@ -109,8 +109,22 @@ async def send_sns_url(ev,tweet_text,return_text="そうなんだ！ツイート
 def check_event(message):
     if "なスタイルに" in message:
         return "スタイル変更"
+    elif "使い方" in message:
+        return "howto"
+    else:
+        return None
 
 # イベント処理
+how_to_mes_list=[
+"MoreMoreSNSの使い方",
+"・会話をすることで投稿文が作られます。",
+"・いきなりくる質問に答えましょう。",
+"・「投稿」と送ると質問がきます。",
+"・「〇〇なスタイルに変更」と送ると投稿文のスタイルが変更できます",
+"・画像を送ると投稿文が作られます。",
+"・「使い方」と送るとこのメッセージを確認できます。",
+]
+how_to_mes="\n".join(how_to_mes_list)
 async def handle_events_text(events,background_tasks):
     '''
     LINEのメッセージ(テキスト)を処理する
@@ -128,7 +142,11 @@ async def handle_events_text(events,background_tasks):
             event_name = check_event(message)
             wakati_ans=wakatigai(ev.message.text)
             # イベントのハンドリング
-            if wakati_ans["flag_toukou"]:
+            if event_name=="howto":
+                await line_api.reply_message_async(
+                    ev.reply_token,
+                    TextMessage(text=how_to_mes))
+            elif wakati_ans["flag_toukou"]:
                 background_tasks.add_task(send_question,num=-1,ev=ev)
             elif len(wakati_ans["noun_count"])==1:
                 # return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
@@ -144,6 +162,9 @@ async def handle_events_text(events,background_tasks):
                 with open("style.json", "w") as f:
                     style_dict[user_id] = message
                     json.dump(style_dict, f)
+                await line_api.reply_message_async(
+                    ev.reply_token,
+                    TextMessage(text=f"スタイルを変更したよ"))
             else:
                 # パラメータの読み込み
                 message = ev.message.text
