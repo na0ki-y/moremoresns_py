@@ -142,19 +142,15 @@ async def handle_events_text(events,background_tasks):
             event_name = check_event(message)
             wakati_ans=wakatigai(ev.message.text)
             # イベントのハンドリング
+            ##############使い方を返す
             if event_name=="howto":
                 await line_api.reply_message_async(
                     ev.reply_token,
                     TextMessage(text=how_to_mes))
+            ##############質問を返す
             elif wakati_ans["flag_toukou"]:
                 background_tasks.add_task(send_question,num=-1,ev=ev)
-            elif len(wakati_ans["noun_count"])==1:
-                # return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
-                # await line_api.reply_message_async(
-                #     ev.reply_token,
-                #     TextMessage(text=f"{return_text}"))
-                tweet_text = questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
-                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=tweet_text)
+            ##############スタイル変更
             elif event_name == "スタイル変更":
                 # user_idごとのスタイルを登録
                 with open("style.json", "r") as f:
@@ -165,6 +161,15 @@ async def handle_events_text(events,background_tasks):
                 await line_api.reply_message_async(
                     ev.reply_token,
                     TextMessage(text=f"スタイルを変更したよ"))
+            ##############名詞が１つなら型にそってツイート文を生成
+            elif len(wakati_ans["noun_count"])==1:
+                # return_text="そうなんだ！ツイートしようよ！\n https://twitter.com/intent/tweet?text="+wakati_ans["noun_count"][0][0]+"を食べたよ"
+                # await line_api.reply_message_async(
+                #     ev.reply_token,
+                #     TextMessage(text=f"{return_text}"))
+                tweet_text = questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
+                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=tweet_text)
+            ##############名詞が複数のときgpt3で
             else:
                 # パラメータの読み込み
                 message = ev.message.text
