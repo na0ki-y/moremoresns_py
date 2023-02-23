@@ -11,10 +11,12 @@ f.close()
 
 openai.api_key = OPENAI_KEY
 
-def gpt3(input_str,req_jp=False):
+def gpt3(input_str,req_jp=False,req_emotion=False):
     prompt = "「{}」をツイート文っぽく変換して。".format(input_str)
     if req_jp:
-        prompt+="日本語で"
+        prompt+="日本語で 感情つけて"
+    if req_emotion:
+        prompt+="感情つけて"
     try:
         # 以下、課金要素
         start = time.time()

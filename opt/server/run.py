@@ -158,7 +158,8 @@ async def handle_events_img(events,background_tasks):
             #####画像から文字(英語)を取得 
             preds=predict_step([img_path],obj_img2text)
             ######文字(英語)からツイート(日本語)生成
-            res = gpt3(preds[0],req_jp=True)
+            res = gpt3(preds[0],req_jp=True,req_emotion=True)
+            #####メッセージを返す
             # gptの生成に時間がかかった場合
             if res == None:
                 await line_api.reply_message_async(
@@ -166,10 +167,8 @@ async def handle_events_img(events,background_tasks):
                 TextMessage(text=f"なんの画像かわからないな。"))
             else:
                 background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0],return_text="いい写真だね！ツイートしようよ!")
-            #####メッセージを返す
-            background_tasks.add_task(send_sns_url,ev=ev,tweet_text=preds[0],return_text="いい写真だね！ツイートしようよ!")
-            print("画像から文字",preds[0])
-            print("文字からツイート",res[0])
+            print("画像から文字:",preds[0])
+            print("文字からツイート:",res[0])
             #####画像の取得
             os.remove(img_path)
             img_cnt+=1
@@ -187,7 +186,6 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     print(events)
-    print(obj_img2text)
     # イベント処理をバックグラウンドタスクに渡す
     if events[0].message.type=="text":
         background_tasks.add_task(handle_events_text, events=events,background_tasks=background_tasks)
