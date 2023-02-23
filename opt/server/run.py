@@ -13,12 +13,17 @@ from aiolinebot import AioLineBotApi
 ##
 import json
 import random
+import os 
 
 from GPT3 import gpt3
 import urllib.parse
 
 from lang import wakatigai
+from img2text import init_img2text
+from img2text import predict_step
 secrets = json.load(open('./secrets/secrets.json', 'r'))
+obj_img2text=None
+obj_img2text=init_img2text()
 # APIクライアントとパーサーをインスタンス化
 
 #[トップ>XXX>YYY >Messaging API設定>チャンネルアクセストークン(一番下)]で取得
@@ -89,11 +94,11 @@ async def send_question(num,ev):
     except Exception as e:
             print(e)
 # イベント処理
-async def send_sns_url(ev,tweet_text):
+async def send_sns_url(ev,tweet_text,return_text="そうなんだ！ツイートしようよ！"):
     try:
         print(type(tweet_text))
         print(tweet_text)
-        return_text="そうなんだ！ツイートしようよ！\nhttps://twitter.com/intent/tweet?text="+urllib.parse.quote(tweet_text)
+        return_text=return_text+"\nhttps://twitter.com/intent/tweet?text="+urllib.parse.quote(tweet_text)
         await line_api.reply_message_async(
             ev.reply_token,
             TextMessage(text=f"{return_text}"))
@@ -106,7 +111,11 @@ def check_event(message):
         return "スタイル変更"
 
 # イベント処理
-async def handle_events(events,background_tasks):
+async def handle_events_text(events,background_tasks):
+    '''
+    LINEのメッセージ(テキスト)を処理する
+    形態素解析してそれぞれのバックグラウンド処理へ
+    '''
     for ev in events:
         try:
             # スタイル変更イベント処理
@@ -157,16 +166,61 @@ async def handle_events(events,background_tasks):
 
         except Exception as e:
             print(e)
+# イベント処理
+img_cnt=0
+async def handle_events_img(events,background_tasks):
+    '''
+    LINEのメッセージ(画像)を処理する
+    画像を取得し、文字(英語)を取得、そしてツイート(日本語)にし、返信する
+    '''
+    global img_cnt
+    for ev in events:
+        try:
+            img_path="./tmp/img{}.png".format(img_cnt)
+            #####画像の取得
+            message_content = line_api.get_message_content(ev.message.id)
+            with open(img_path, 'wb') as fd:
+                for chunk in message_content.iter_content():
+                    fd.write(chunk)
+            #####画像から文字(英語)を取得 
+            preds=predict_step([img_path],obj_img2text)
+            ######文字(英語)からツイート(日本語)生成
+            res = gpt3(preds[0],req_jp=True,req_emotion=True)
+            #####メッセージを返す
+            # gptの生成に時間がかかった場合
+            if res == None:
+                await line_api.reply_message_async(
+                ev.reply_token,
+                TextMessage(text=f"なんの画像かわからないな。"))
+            else:
+                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0],return_text="いい写真だね！ツイートしようよ!")
+            print("画像から文字:",preds[0])
+            print("文字からツイート:",res[0])
+            #####画像の取得
+            os.remove(img_path)
+            img_cnt+=1
+        except Exception as e:
+            print(e)
 
 @app.post("/messaging_api/handle_request")
 async def handle_request(request: Request, background_tasks: BackgroundTasks):
+    '''
+    LINEのメッセージを受け取る
+    内容を確認してバックグラウンドタスクへ
+    '''
     # リクエストをパースしてイベントを取得（署名の検証あり）
     events = parser.parse(
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     print(events)
-    # 🌟イベント処理をバックグラウンドタスクに渡す
-    background_tasks.add_task(handle_events, events=events,background_tasks=background_tasks)
+    # イベント処理をバックグラウンドタスクに渡す
+    if events[0].message.type=="text":
+        background_tasks.add_task(handle_events_text, events=events,background_tasks=background_tasks)
+    elif events[0].message.type=="image":
+        background_tasks.add_task(handle_events_img, events=events,background_tasks=background_tasks)
+        print("img")
+    else:
+        print(events[0].message.type,"no support")
     # LINEサーバへHTTP応答を返す
     return "ok"
 
