@@ -11,9 +11,11 @@ f.close()
 
 openai.api_key = OPENAI_KEY
 
-def gpt3(input_str):
+def gpt3(input_str, sub_message=None):
     prompt = "「{}」をツイート文っぽく変換して。".format(input_str)
-
+    if sub_message is not None:
+        prompt += sub_message
+    print(prompt)
     try:
         # 以下、課金要素
         start = time.time()

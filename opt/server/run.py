@@ -100,11 +100,25 @@ async def send_sns_url(ev,tweet_text):
     except Exception as e:
             print(e)
 
+# イベントのフラグチェックを行う関数
+def check_event(message):
+    if "なスタイルに" in message:
+        return "スタイル変更"
+
 # イベント処理
 async def handle_events(events,background_tasks):
     for ev in events:
         try:
+            # スタイル変更イベント処理
+            # イベント情報の読み込み
+            # user_id情報の取り出し
+            message = ev.message.text
+            profile = line_api.get_profile(ev.source.user_id)
+            user_id = profile.user_id
+            # イベント情報の判断
+            event_name = check_event(message)
             wakati_ans=wakatigai(ev.message.text)
+            # イベントのハンドリング
             if wakati_ans["flag_toukou"]:
                 background_tasks.add_task(send_question,num=-1,ev=ev)
             elif len(wakati_ans["noun_count"])==1:
@@ -114,10 +128,25 @@ async def handle_events(events,background_tasks):
                 #     TextMessage(text=f"{return_text}"))
                 tweet_text = questions[user_q_id[ev.source.user_id]]["A"].format(wakati_ans["noun_count"][0][0])
                 background_tasks.add_task(send_sns_url,ev=ev,tweet_text=tweet_text)
+            elif event_name == "スタイル変更":
+                # user_idごとのスタイルを登録
+                with open("style.json", "r") as f:
+                    style_dict = json.load(f)
+                with open("style.json", "w") as f:
+                    style_dict[user_id] = message
+                    json.dump(style_dict, f)
             else:
-                # background_tasks.add_task(gpt3,num=-1)
-                res = gpt3(ev.message.text)
-
+                # パラメータの読み込み
+                message = ev.message.text
+                user_id = profile.user_id
+                with open("style.json", "r") as f:
+                    style_dict = json.load(f)
+                # スタイル指定があれば、スタイルを読み込む
+                if user_id in style_dict.keys():
+                    sub_message = style_dict[user_id]
+                    res = gpt3(message, sub_message=sub_message)
+                else:
+                    res = gpt3(message, sub_message=None)
                 # gptの生成に時間がかかった場合
                 if res == None:
                     await line_api.reply_message_async(
@@ -125,8 +154,6 @@ async def handle_events(events,background_tasks):
                     TextMessage(text=f"それはなに？かんたんに答えて！"))
                 else:
                     background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0])
-                
-                
 
         except Exception as e:
             print(e)
