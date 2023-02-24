@@ -244,6 +244,8 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
         (await request.body()).decode("utf-8"),
         request.headers.get("X-Line-Signature", ""))
     print(events)
+    if len(events)==0:#webで検証のときはこれ
+        return "ok"
     # イベント処理をバックグラウンドタスクに渡す
     if events[0].message.type=="text":
         background_tasks.add_task(handle_events_text, events=events,background_tasks=background_tasks)
