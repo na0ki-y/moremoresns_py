@@ -1,6 +1,7 @@
 from transformers import VisionEncoderDecoderModel, ViTFeatureExtractor, AutoTokenizer
 import torch
 from PIL import Image
+import time
 #https://huggingface.co/nlpconnect/vit-gpt2-image-captioning
 
 def init_img2text():
@@ -32,8 +33,15 @@ def predict_step(image_paths,obj_img2text):
   preds = [pred.strip() for pred in preds]
   return preds
 
+def pred_one_img2text(img_path,obj_img2text):
+  start = time.time()
+  preds=predict_step([img_path],obj_img2text)#img_pathの配列にして渡す
+  time_img2text=time.time()-start
+  return {"pred_text":preds[0],"time_img2text":time_img2text}
 if __name__=="__main__":
     obj_img2text=init_img2text()
     print(obj_img2text)
     preds=predict_step(['./tmp/img0.png'],obj_img2text) # ['a woman in a hospital bed with a woman in a hospital bed']
     print(preds)
+    dic=pred_one_img2text('./tmp/img0.png',obj_img2text)
+    print(dic)
