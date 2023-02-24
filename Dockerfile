@@ -14,4 +14,10 @@ RUN apt-get install -y vim less
 RUN pip install --upgrade pip
 RUN pip install --upgrade setuptools
 
-RUN python -m pip install pipenv
+WORKDIR /root/
+COPY ./ /root/
+RUN pip install -r requirements.txt
+
+EXPOSE 8080
+WORKDIR /root/opt/server
+CMD ["uvicorn", "run:app", "--reload","--host", "0.0.0.0", "--port", "8080"]

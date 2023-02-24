@@ -153,9 +153,9 @@ async def handle_events_text(events,background_tasks):
             ##############スタイル変更
             elif event_name == "スタイル変更":
                 # user_idごとのスタイルを登録
-                with open("style.json", "r") as f:
+                with open("./style.json", "r") as f:
                     style_dict = json.load(f)
-                with open("style.json", "w") as f:
+                with open("./style.json", "w") as f:
                     style_dict[user_id] = message
                     json.dump(style_dict, f)
                 await line_api.reply_message_async(
@@ -174,7 +174,7 @@ async def handle_events_text(events,background_tasks):
                 # パラメータの読み込み
                 message = ev.message.text
                 user_id = profile.user_id
-                with open("style.json", "r") as f:
+                with open("./style.json", "r") as f:
                     style_dict = json.load(f)
                 # スタイル指定があれば、スタイルを読み込む
                 if user_id in style_dict.keys():
@@ -240,13 +240,21 @@ async def handle_request(request: Request, background_tasks: BackgroundTasks):
         request.headers.get("X-Line-Signature", ""))
     print(events)
     # イベント処理をバックグラウンドタスクに渡す
-    if events[0].message.type=="text":
-        background_tasks.add_task(handle_events_text, events=events,background_tasks=background_tasks)
-    elif events[0].message.type=="image":
-        background_tasks.add_task(handle_events_img, events=events,background_tasks=background_tasks)
-        print("img")
-    else:
-        print(events[0].message.type,"no support")
+    # gcpやlineに乗せる場合eventsが[]として出されることがある
+    if len(events) != 0:
+        if events[0].message.type=="text":
+            background_tasks.add_task(
+                handle_events_text,
+                events=events,
+                background_tasks=background_tasks)
+        elif events[0].message.type=="image":
+            background_tasks.add_task(
+                handle_events_img,
+                events=events,
+                background_tasks=background_tasks)
+            print("img")
+        else:
+            print(events[0].message.type,"no support")
     # LINEサーバへHTTP応答を返す
     return "ok"
 
