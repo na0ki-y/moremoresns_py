@@ -20,7 +20,7 @@ import urllib.parse
 
 from lang import wakatigai
 from img2text import init_img2text
-from img2text import predict_step
+from img2text import pred_one_img2text
 secrets = json.load(open('./secrets/secrets.json', 'r'))
 obj_img2text=None
 obj_img2text=init_img2text()
@@ -45,7 +45,7 @@ questions={
         },
         5:{
             "Q":"最近チームでどんな活動をしましたか?",
-            "A":"この前, {}をやってみました!"
+            "A":"この前、{}をやってみました!"
         },
         6:{
             "Q":"これから何か予定していることはありますか?",
@@ -61,7 +61,7 @@ questions={
         },
         9:{
             "Q":"どんな人とコラボレーションしてみたいですか?",
-            "A":"{}と一緒になにかしたいです"
+            "A":"{}と一緒にコラボしたい"
         },
         10:{
             "Q":"最近何かイベントに参加しましたか?",
@@ -102,6 +102,9 @@ async def send_sns_url(ev,tweet_text,return_text="そうなんだ！ツイート
         await line_api.reply_message_async(
             ev.reply_token,
             TextMessage(text=f"{return_text}"))
+        #line_api.push_message(ev.source.user_id, TextSendMessage(text=f"{return_text}"))
+        #メッセージはリプライかプッシュで送る
+        #リプライは一度のみ
     except Exception as e:
             print(e)
 
@@ -202,6 +205,8 @@ async def handle_events_img(events,background_tasks):
     global img_cnt
     for ev in events:
         try:
+            #####画像を受け付けたことをレスポンス
+            line_api.push_message(ev.source.user_id, TextSendMessage(text=f"いい写真だね。ちょっとまってね。"))
             img_path="./tmp/img{}.png".format(img_cnt)
             #####画像の取得
             message_content = line_api.get_message_content(ev.message.id)
@@ -209,9 +214,10 @@ async def handle_events_img(events,background_tasks):
                 for chunk in message_content.iter_content():
                     fd.write(chunk)
             #####画像から文字(英語)を取得 
-            preds=predict_step([img_path],obj_img2text)
+            dic_img2text=pred_one_img2text(img_path,obj_img2text)
+            print("画像から文字:",dic_img2text["time_img2text"],'s/',dic_img2text["pred_text"])
             ######文字(英語)からツイート(日本語)生成
-            res = gpt3(preds[0],req_jp=True,req_emotion=True)
+            res = gpt3(dic_img2text["pred_text"],req_jp=True,req_emotion=True)
             #####メッセージを返す
             # gptの生成に時間がかかった場合
             if res == None:
@@ -219,14 +225,13 @@ async def handle_events_img(events,background_tasks):
                 ev.reply_token,
                 TextMessage(text=f"なんの画像かわからないな。"))
             else:
-                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0],return_text="いい写真だね！ツイートしようよ!")
-            print("画像から文字:",preds[0])
-            print("文字からツイート:",res[0])
+                background_tasks.add_task(send_sns_url,ev=ev,tweet_text=res[0],return_text="ツイート文を考えたよ。これでツイートしよう。")
+            print("文字からツイート(gpt3):",res[1],'s/',res[0])
             #####画像の取得
             os.remove(img_path)
             img_cnt+=1
         except Exception as e:
-            print(e)
+            print("err(img):",e)
 
 @app.post("/messaging_api/handle_request")
 async def handle_request(request: Request, background_tasks: BackgroundTasks):
